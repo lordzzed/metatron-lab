@@ -1,0 +1,6 @@
+loot.json
+exfiltrated_users.json
+__pycache__/
+*.pyc
+venv/
+.env

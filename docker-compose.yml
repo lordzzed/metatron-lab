@@ -1,0 +1,67 @@
+version: '3.9'
+
+networks:
+  red_zone:
+    driver: bridge
+  blue_zone:
+    driver: bridge
+    internal: true
+
+services:
+  metatron-core:
+    build: . # Aponta para o Dockerfile que criamos
+    container_name: metatron_brain
+    networks:
+      - red_zone
+    volumes:
+      - ./metatron_src:/app
+    # Hardening de Runtime (Defesa em Profundidade)
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW # Permite que o nmap envie pacotes brutos
+    working_dir: /app    
+    command: tail -f /dev/null
+
+  # --- PROVEDOR LLM (CPU MODE) ---
+  ollama-provider:
+    image: ollama/ollama:latest
+    container_name: metatron_llm
+    networks:
+      - red_zone
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '0.80' # Limita a 80% do uso total de CPU para não travar o host
+          memory: 4G
+
+  defense-waf:
+    image: owasp/modsecurity-crs:nginx
+    container_name: defense_waf
+    networks:
+      - red_zone  # Recebe os ataques do Metatron
+      - blue_zone # Comunica-se com o backend isolado
+    environment:
+      # Aponta o tráfego limpo para o Juice Shop
+      - PROXY_LOCATION=http://target-app-web:3000
+      # VARIÁVEL DE TOGGLE (O "Interruptor" Didático)
+      # Valores aceitos: On (Bloqueia), DetectionOnly (Apenas Loga), Off (Desligado)
+      - MODSEC_RULE_ENGINE=On
+      - BACKEND=http://target-app-web:3000 
+    ports:
+      - "8080:80" # Porta de entrada do laboratóri
+    depends_on:
+      - target-app-web # Força o alvo a subir antes do WAF
+          
+  # --- ALVO: OWASP JUICE SHOP ---
+  target-app-web:
+    image: bkimminich/juice-shop
+    container_name: target_web_vulnerable
+    networks:
+      - blue_zone
+    restart: always
+
+volumes:
+  ollama_data:
