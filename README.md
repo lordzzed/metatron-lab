@@ -48,7 +48,6 @@ flowchart TD
 
 ## 🔒 Diretrizes de Segurança — Defense in Depth
 
-- **Vibe Coding Profissional** — Decomposição granular de cada tática da matriz MITRE ATT&CK.
 - **Evasão Adaptativa** — Implementação da técnica T1562.001 (WAF Bypass) com feedback loop automático.
 - **Persistence Mechanisms** — Criação de contas backdoor via API administrativa para garantir acesso após rotação de credenciais.
 - **Zero-Trust Lab** — Todas as ferramentas operam em rede isolada via Docker Compose, sem exposição de ativos externos.
